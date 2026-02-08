@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Caesar Cipher • Bro Edition</title>
+  <style>
+    :root {
+      --bg: #0f0f17;
+      --text: #e2e8f0;
+      --card: #1e293b;
+      --accent: #6366f1;
+      --accent-dark: #4f46e5;
+      --border: #334155;
+      --input-bg: #1e293b;
+      --success: #10b981;
+    }
+
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --text: #0f172a;
+      --card: #ffffff;
+      --accent: #4f46e5;
+      --accent-dark: #4338ca;
+      --border: #e2e8f0;
+      --input-bg: #f1f5f9;
+      --success: #059669;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background 0.4s, color 0.4s;
+    }
+
+    /* Loading Screen */
+    #loader {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.6s ease;
+    }
+
+    #loader.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .title-block {
+      font-size: 5.5rem;
+      font-weight: 900;
+      letter-spacing: -4px;
+      background: linear-gradient(90deg, var(--accent), #c084fc, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 40px rgba(99, 102, 241, 0.5);
+      animation: pulse 2s infinite alternate;
+    }
+
+    .incognito-icon {
+      width: 120px;
+      height: 120px;
+      margin: 1.5rem 0;
+      opacity: 0.9;
+    }
+
+    .loading-text {
+      margin-top: 1rem;
+      font-size: 1.3rem;
+      color: #94a3b8;
+      letter-spacing: 2px;
+      font-weight: 500;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); opacity: 0.85; }
+      to   { transform: scale(1.05); opacity: 1; }
+    }
+
+    /* App Styles */
+    .container { max-width: 720px; margin: 40px auto; padding: 0 16px; }
+    header { text-align: center; margin-bottom: 2.5rem; }
+    h1 {
+      font-size: 2.8rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent), #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 16px; right: 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 48px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      z-index: 1000;
+    }
+
+    .theme-toggle:hover { 
+      transform: scale(1.1); 
+      background: var(--accent); 
+      color: white; 
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 2rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      margin-bottom: 1.5rem;
+    }
+
+    textarea, input[type="number"] {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 1.05rem;
+      font-family: 'Consolas', monospace;
+      resize: vertical;
+      min-height: 120px;
+      margin: 12px 0;
+    }
+
+    textarea:focus, input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin: 1.5rem 0;
+      align-items: center;
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+
+    button:hover { background: var(--accent-dark); transform: translateY(-1px); }
+
+    /* ─── NEW: Output w/ Copy Button ─── */
+    .output-wrapper {
+      position: relative;
+    }
+
+    .output {
+      background: rgba(30,41,59,0.6);
+      padding: 16px;
+      border-radius: 10px;
+      font-family: 'Consolas', monospace;
+      white-space: pre-wrap;
+      border: 1px dashed var(--border);
+      min-height: 80px;
+      user-select: all;
+      position: relative;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 600;
+      z-index: 10;
+    }
+
+    .copy-btn:hover { background: var(--accent-dark); transform: scale(1.05); }
+    .copy-btn.copied {
+      background: var(--success);
+      animation: copiedPulse 0.6s ease;
+    }
+
+    @keyframes copiedPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .label { font-weight: 600; margin-bottom: 8px; display: block; color: #94a3b8; }
+
+    @media (max-width: 500px) {
+      .controls { flex-direction: column; align-items: stretch; }
+      button { width: 100%; }
+      .title-block { font-size: 4rem; }
+      .copy-btn { position: static; width: 100%; margin-top: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading Screen -->
+  <div id="loader">
+    <div class="title-block">CAESAR</div>
+    <div class="title-block" style="margin-top:-20px;">CIPHER</div>
+    
+    <svg class="incognito-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <circle cx="8" cy="10" r="2"/>
+      <circle cx="16" cy="10" r="2"/>
+      <path d="M8 15c1.5 2 6.5 2 8 0"/>
+      <path d="M9 2l1.5 3"/>
+      <path d="M15 2l-1.5 3"/>
+    </svg>
+
+    <div class="loading-text">Going incognito...</div>
+  </div>
+
+  <div class="theme-toggle" title="Toggle dark/light">☀️</div>
+
+  <div class="container" style="opacity:0; transition:opacity 0.8s ease 0.4s;">
+    <header>
+      <h1>Caesar Cipher</h1>
+      <p style="color:#94a3b8;">Classic encryption • Bro style (Copy-ready!)</p>
+    </header>
+
+    <div class="card">
+      <div class="label">Your message</div>
+      <textarea id="inputText" placeholder="Type or paste your secret message here...">Hello Bro this is secret</textarea>
+
+      <div class="controls">
+        <div style="display:flex; align-items:center; gap:12px; flex:1;">
+          <label class="label">Shift</label>
+          <input type="number" id="shift" value="3" min="-25" max="25" style="width:90px; text-align:center;"/>
+        </div>
+
+        <button onclick="encrypt()">Encrypt →</button>
+        <button onclick="decrypt()">← Decrypt</button>
+        <button onclick="reset()">Reset</button>
+      </div>
+
+      <div class="label">Result</div>
+      <div class="output-wrapper">
+        <div class="output" id="output">Encrypted text appears here... (Click Copy!)</div>
+        <button class="copy-btn" onclick="copyResult()" title="Copy to clipboard">📋 Copy</button>
+      </div>
+    </div>
+
+    <div class="card" style="font-size:0.95rem; color:#94a3b8;">
+      Tip: Negative shift = decrypt | Only letters shift — rest stays chill<br>
+      Pro move: Copy encrypted msgs for notes/secrets 🔥
+    </div>
+  </div>
+
+  <script>
+    // Loader
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('loader').classList.add('hidden');
+        setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 600);
+        document.querySelector('.container').style.opacity = '1';
+      }, 2000);
+    });
+
+    // Caesar
+    function caesar(text, shift) {
+      let result = "";
+      shift = parseInt(shift) || 0;
+      for (let char of text) {
+        const code = char.charCodeAt(0);
+        if (65 <= code && code <= 90) {
+          result += String.fromCharCode(((code - 65 + shift) % 26) + 65);
+        } else if (97 <= code && code <= 122) {
+          result += String.fromCharCode(((code - 97 + shift) % 26) + 97);
+        } else {
+          result += char;
+        }
+      }
+      return result;
+    }
+
+    const input = document.getElementById("inputText");
+    const shiftEl = document.getElementById("shift");
+    const output = document.getElementById("output");
+
+    function encrypt() { output.textContent = caesar(input.value, shiftEl.value); }
+    function decrypt() { output.textContent = caesar(input.value, -parseInt(shiftEl.value) || 0); }
+    function reset() {
+      input.value = "";
+      output.textContent = "Encrypted text appears here... (Click Copy!)";
+      shiftEl.value = 3;
+    }
+
+    // ─── NEW: Copy Function ───
+    function copyResult() {
+      const text = output.textContent.trim();
+      if (text === "Encrypted text appears here... (Click Copy!)") return;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        const original = btn.textContent;
+        btn.textContent = "✅ Copied!";
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = original;
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    // Theme toggle
+    document.querySelector(".theme-toggle").addEventListener("click", () => {
+      const html = document.documentElement;
+      const current = html.getAttribute("data-theme");
+      const next = current === "dark" ? "light" : "dark";
+      html.setAttribute("data-theme", next);
+      document.querySelector(".theme-toggle").textContent = next === "dark" ? "☀️" : "🌙";
+    });
+
+    // Enter = encrypt
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        encrypt();
+      }
+    });
+
+    // Auto-encrypt on load w/ example
+    encrypt();
+  </script>
+</body>
+</html>
